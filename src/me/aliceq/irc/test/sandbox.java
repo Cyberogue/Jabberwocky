@@ -21,12 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc;
+package me.aliceq.irc.test;
+
+import me.aliceq.irc.*;
 
 /**
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class ServerConnection {
-    
+public class sandbox {
+
+    public static void main(String[] args) {
+        IRCServer server = new IRCServer("irc.esper.net", 6697, true);
+    }
 }
