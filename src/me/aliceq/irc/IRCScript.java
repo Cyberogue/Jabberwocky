@@ -24,12 +24,12 @@
 package me.aliceq.irc;
 
 /**
- * Interface for an IRC client which is any exchange between any single user or
- * channel
+ * Base class for an IRC client which is any exchange between any single user or
+ * channel. Upon registration, the run() method is called once on its own thread.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public interface IRCClient {
+public abstract class IRCScript {
 
-    void receive(String message, String source);
+    public abstract void run();
 }

@@ -21,15 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc;
+package me.aliceq.irc.internal;
+
+import me.aliceq.irc.IRCScript;
 
 /**
- *
+ * 
  * @author Alice Quiros <email@aliceq.me>
  */
-public abstract class IRCClientThread implements Runnable {
+public abstract class IRCScriptWrapper implements Runnable {
+
+    // This IRCScript instane exists to disconnect an user implementation from System.Thread 
+    private final IRCScript client;
+    private final Thread thread;
+
+    protected IRCScriptWrapper(IRCScript client) {
+        this.client = client;
+        this.thread = new Thread(this);
+    }
+
+    public final void start() {
+        thread.start();
+    }
 
     @Override
     public final void run() {
+        client.run();
     }
 }

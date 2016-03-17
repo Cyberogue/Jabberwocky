@@ -23,18 +23,18 @@
  */
 package me.aliceq.irc.clients;
 
-import me.aliceq.irc.IRCClient;
+import me.aliceq.irc.IRCScript;
 
 /**
  * A client that simply prints any incoming messages
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class DebugClient implements IRCClient {
+public class DebugClient extends IRCScript {
 
     @Override
-    public void receive(String message, String source) {
-        System.out.println("[" + source + "] " + message);
+    public void run() {
+        System.out.println("Client run");
     }
 
 }

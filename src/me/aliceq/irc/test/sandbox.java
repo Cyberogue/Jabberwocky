@@ -32,6 +32,12 @@ import me.aliceq.irc.*;
 public class sandbox {
 
     public static void main(String[] args) {
-        IRCServer server = new IRCServer("irc.esper.net", 6697, true);
+        IRCServer server = new IRCServer("irc.esper.net", 6667, false);
+        server.setVerbose();
+        server.start();
+
+        IRCIdentity me = new IRCIdentity("AliceTest", "AliceTest", "AliceBot2.0", "test");
+        server.identify(me);
+        
     }
 }

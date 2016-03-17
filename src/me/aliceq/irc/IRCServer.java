@@ -23,6 +23,12 @@
  */
 package me.aliceq.irc;
 
+import me.aliceq.irc.internal.IRCSocket;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+
 /**
  * Wrapper for a IRCSocket instance acting as a central node for its children
  *
@@ -31,6 +37,9 @@ package me.aliceq.irc;
 public class IRCServer {
 
     private final IRCSocket socket;
+    private PrintWriter outstream;
+    private BufferedReader instream;
+    private boolean verbose = false;
 
     /**
      * Basic constructor
@@ -63,6 +72,20 @@ public class IRCServer {
     }
 
     /**
+     * Enables printing of messages and exceptions to System.out
+     */
+    public void setVerbose() {
+        this.verbose = true;
+    }
+
+    /**
+     * Disables printing of messages and exceptions to System.out
+     */
+    public void setQuiet() {
+        this.verbose = false;
+    }
+
+    /**
      * Returns true if a connection is established
      *
      * @return true if a connection is established
@@ -70,6 +93,136 @@ public class IRCServer {
     public boolean isConnected() {
         return socket.isConnected();
     }
-    
-    
+
+    /**
+     * Returns true if the server connection is set up and ready for usage
+     *
+     * @return in/out are initialized and a connection exists
+     */
+    public boolean isReady() {
+        return socket.isConnected() && outstream != null && instream != null;
+    }
+
+    /**
+     * Starts the server
+     */
+    public void start() {
+        if (!socket.isConnected()) {
+            throw new IRCException("Server is not connected");
+        }
+
+        // Create output writer
+        try {
+            outstream = new PrintWriter(this.socket.getOutputStream(), true);
+            instream = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+        } catch (IOException e) {
+            outstream = null;
+            instream = null;
+            if (verbose) {
+                System.out.println(e);
+            }
+        }
+
+        final BufferedReader in = instream;
+
+        // Create a new thread to read messages
+        Thread thread = new Thread(new Runnable() {
+
+            // TODO: Move all this to a dedicated ServerReader class
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        for (String line = in.readLine(); line != null; line = in.readLine()) {
+                            if (verbose) {
+                                System.out.println("[<] " + line);
+                            }
+                            // PONG message
+                            if (line.startsWith("PING")) {
+                                send("PONG " + line.substring(5, line.length()));
+                            }
+                        }
+
+                        Thread.sleep(100);
+                    } catch (IOException | InterruptedException e) {
+
+                    }
+                }
+            }
+        });
+        thread.start();
+    }
+
+    /**
+     * Sends the appropriate messages to identify. If the connection is not
+     * ready this does nothing.
+     *
+     * @param identity the identity to identify with
+     */
+    public void identify(IRCIdentity identity) {
+        if (!isReady()) {
+            return;
+        }
+
+        if (identity.password() != null) {
+            write("PASS " + identity.password());
+        }
+
+        write("NICK " + identity.nickname());
+        write("USER " + identity.username()
+                + " " + identity.getMode()
+                + " * :" + identity.realname());
+        flush();
+    }
+
+    /**
+     * Sends and flushes a single message
+     *
+     * @param message message to send
+     */
+    protected void send(String message) {
+        if (verbose) {
+            System.out.println("[>] " + message);
+        }
+
+        outstream.write(message + "\r\n");
+        outstream.flush();
+    }
+
+    /**
+     * Sends and flushes a group of messages
+     *
+     * @param messages messages to send
+     */
+    protected void send(String[] messages) {
+        for (String message : messages) {
+            if (verbose) {
+                System.out.println("[>] " + message);
+            }
+            outstream.write(message + "\r\n");
+        }
+        outstream.flush();
+    }
+
+    /**
+     * Writes a message for sending. Note that this doesn't flush the stream.
+     *
+     * @param message message to write
+     */
+    protected void write(String message) {
+        if (verbose) {
+            System.out.println("[~] " + message);
+        }
+        outstream.write(message + "\r\n");
+    }
+
+    /**
+     * FLushes the output stream
+     */
+    protected void flush() {
+        if (verbose) {
+            System.out.println("[^] ");
+        }
+        outstream.flush();
+    }
 }

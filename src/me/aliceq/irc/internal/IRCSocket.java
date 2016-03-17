@@ -21,12 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc;
+package me.aliceq.irc.internal;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+import me.aliceq.irc.IRCException;
 
 /**
  * Main IRC server socket
@@ -41,19 +44,23 @@ public final class IRCSocket {
 
     private Socket socket;
 
-       /**
+    /**
      * Basic constructor for an unprotected socket on the default port
+     *
      * @param address the address to connect to
-     * @throws IRCException 
+     * @throws IRCException
      */
     public IRCSocket(String address) throws IRCException {
         this(address, DEFAULT_PORT, false);
     }
-   /**
-     * Constructor which connects to either the default port or the default SSL port
+
+    /**
+     * Constructor which connects to either the default port or the default SSL
+     * port
+     *
      * @param address the address to connect to
      * @param secure if true, an SSL connection is attempted
-     * @throws IRCException 
+     * @throws IRCException
      */
     public IRCSocket(String address, boolean secure) throws IRCException {
         this(address, secure ? DEFAULT_SSL_PORT : DEFAULT_PORT, false);
@@ -61,9 +68,10 @@ public final class IRCSocket {
 
     /**
      * Constructor for an unprotected socket
+     *
      * @param address the address to connect to
      * @param port the port to connect with
-     * @throws IRCException 
+     * @throws IRCException
      */
     public IRCSocket(String address, int port) throws IRCException {
         this(address, port, false);
@@ -71,10 +79,11 @@ public final class IRCSocket {
 
     /**
      * Full constructor
+     *
      * @param address the address to connect to
      * @param port the port to connect with
      * @param secure if true, an SSL connection is attempted
-     * @throws IRCException 
+     * @throws IRCException
      */
     public IRCSocket(String address, int port, boolean secure) throws IRCException {
         try {
@@ -90,9 +99,31 @@ public final class IRCSocket {
 
     /**
      * Returns true if a connection is established
+     *
      * @return true if a connection is established
      */
-    public boolean isConnected(){
+    public boolean isConnected() {
         return socket.isConnected();
     }
+
+    /**
+     * Gets the socket's input stream
+     *
+     * @return an InputStream
+     * @throws IOException
+     */
+    public InputStream getInputStream() throws IOException {
+        return socket.getInputStream();
+    }
+
+    /**
+     * Gets the socket's output stream
+     *
+     * @return an OutputStream
+     * @throws IOException
+     */
+    public OutputStream getOutputStream() throws IOException {
+        return socket.getOutputStream();
+    }
+
 }
