@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-
 /**
  * Wrapper for a IRCSocket instance acting as a central node for its children
  *
@@ -134,12 +133,12 @@ public class IRCServer {
                 while (true) {
                     try {
                         for (String line = in.readLine(); line != null; line = in.readLine()) {
-                            if (verbose) {
-                                System.out.println("[<] " + line);
-                            }
-                            // PONG message
+                            // PONG message handling
                             if (line.startsWith("PING")) {
                                 send("PONG " + line.substring(5, line.length()));
+                            } else {
+                                // Otherwise parse the message
+                                System.out.println(line);
                             }
                         }
 
@@ -150,6 +149,7 @@ public class IRCServer {
                 }
             }
         });
+        thread.setDaemon(true);
         thread.start();
     }
 

@@ -21,15 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc;
+package me.aliceq.irc.subroutines;
 
 /**
- * Base class for an IRC client which is any exchange between any single user or
- * channel. Upon registration, the run() method is called once on its own thread.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public abstract class IRCScript {
-
-    public abstract void run();
+public class ConnectionSubroutine {
+    
 }

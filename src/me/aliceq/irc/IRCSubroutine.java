@@ -21,27 +21,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.test;
-
-import me.aliceq.irc.*;
-import me.aliceq.logging.Log;
+package me.aliceq.irc;
 
 /**
+ * A custom subroutine monitored by a server which runs on its own thread. This
+ * allows it to implement blocking methods for message retrieval. Overwrite the
+ * run method for custom implementations.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class sandbox {
+public abstract class IRCSubroutine {
 
-    public static void main(String[] args) {
-        IRCServer server = new IRCServer("irc.esper.net", 6667, false);
-        server.setVerbose();
-        server.start();
+    final private IRCServer server;
 
-        IRCIdentity me = new IRCIdentity("AliceTest", "AliceTest", "AliceBot2.0", "test");
-       // server.identify(me);
-
-        IRCMessage message = IRCMessage.parseFrom(":nova.esper.net NOTICE * :*** Found your hostname");
-
-        System.out.println(message.toString("[%D] [%S:%U] [%T] %M"));
+    /**
+     * Default constructor not allowed
+     *
+     * @deprecated
+     */
+    @Deprecated
+    protected IRCSubroutine() {
+        throw new UnsupportedOperationException("Default constructor not allowed");
     }
+
+    /**
+     * Constructor which ties the subroutine to a server
+     *
+     * @param server
+     */
+    protected IRCSubroutine(IRCServer server) {
+        this.server = server;
+    }
+
+    public IRCServer server() {
+        return this.server;
+    }
+
+    public final synchronized String getNext() {
+        return "";
+    }
+
+    public final synchronized String getNext(String source) {
+        return "";
+    }
+
+    public final void send(String message) {
+        server.send(message);
+    }
+
+    public final void send(String[] messages) {
+        server.send(messages);
+    }
+
+    public abstract void run();
 }

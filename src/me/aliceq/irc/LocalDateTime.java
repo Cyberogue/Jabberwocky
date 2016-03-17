@@ -21,20 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.clients;
-
-import me.aliceq.irc.IRCScript;
+package me.aliceq.irc;
 
 /**
- * A client that simply prints any incoming messages
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class DebugClient extends IRCScript {
-
-    @Override
-    public void run() {
-        System.out.println("Client run");
-    }
-
+public class LocalDateTime {
+    
 }

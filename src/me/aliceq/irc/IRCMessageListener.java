@@ -21,31 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.internal;
-
-import me.aliceq.irc.IRCScript;
+package me.aliceq.irc;
 
 /**
- * 
+ * Functional interface which retrieves specific messages. Use either the
+ * defaults or implement your own.
+ *
  * @author Alice Quiros <email@aliceq.me>
  */
-public abstract class IRCScriptWrapper implements Runnable {
+public interface IRCMessageListener {
 
-    // This IRCScript instane exists to disconnect an user implementation from System.Thread 
-    private final IRCScript client;
-    private final Thread thread;
+    /**
+     * Returns any message
+     */
+    public static final IRCMessageListener ANY = new IRCMessageListener() {
+        @Override
+        public boolean check(String message) {
+            return true;
+        }
+    };
 
-    protected IRCScriptWrapper(IRCScript client) {
-        this.client = client;
-        this.thread = new Thread(this);
-    }
-
-    public final void start() {
-        thread.start();
-    }
-
-    @Override
-    public final void run() {
-        client.run();
-    }
+    /**
+     * Main method which checks whether or not a message's criteria meets the
+     * conditions required to return it
+     *
+     * @param message The message to check
+     * @return true or false
+     */
+    public boolean check(String message);
 }
