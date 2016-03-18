@@ -28,9 +28,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import me.aliceq.irc.internal.IRCMessageRequest;
+import me.aliceq.irc.subroutines.ChannelMonitoringSubroutine;
 import me.aliceq.irc.subroutines.ConnectionSubroutine;
 
 /**
@@ -51,6 +55,8 @@ public final class IRCServer {
     private int activeThreadCount = 0;
 
     private final IRCServerDetails details = new IRCServerDetails();
+
+    private final Map<String, IRCChannel> channels = new HashMap();
 
     /**
      * Basic constructor
@@ -134,7 +140,7 @@ public final class IRCServer {
             throw new IRCException("Server is not connected");
         }
 
-        // Set details
+        // Set getDetails
         details.socketConnected = true;
 
         // Create output writer
@@ -206,6 +212,7 @@ public final class IRCServer {
 
         // Set identity
         details.identity = identity;
+        details.currentNick = identity.nickname();
 
         // Initialize subroutine
         IRCSubroutine subroutine = new ConnectionSubroutine();
@@ -229,7 +236,7 @@ public final class IRCServer {
      *
      * @param message message to send
      */
-    protected void send(String message) {
+    public void send(String message) {
         if (verbose) {
             System.out.println("[>] " + message);
         }
@@ -243,7 +250,7 @@ public final class IRCServer {
      *
      * @param messages messages to send
      */
-    protected void send(String[] messages) {
+    public void send(String[] messages) {
         for (String message : messages) {
             if (verbose) {
                 System.out.println("[>] " + message);
@@ -251,6 +258,100 @@ public final class IRCServer {
             outstream.write(message + "\r\n");
         }
         outstream.flush();
+    }
+
+    /**
+     * Sends a join message to the server and adds the required channels to a
+     * list of channels
+     *
+     * @param channels the channels to join, comma-separated
+     */
+    public void join(String channels) {
+        join(channels, null);
+    }
+
+    /**
+     * Sends a join message to the server and adds the required channels to a
+     * list of channels
+     *
+     * @param channels the channels to join, comma-separated
+     * @param passwords the channel passwords, comma-separated
+     */
+    public void join(String channels, String passwords) {
+        for (String channel : channels.toLowerCase().split(",")) {
+            IRCChannel instance = new IRCChannel(channel);
+            runSubroutine(new ChannelMonitoringSubroutine(instance));
+
+            this.channels.put(channel, instance);
+        }
+
+        send("JOIN " + channels + (passwords == null ? "" : " " + passwords));
+    }
+
+    /**
+     * Returns the IRCChannel instance of the given channel, if there is one
+     *
+     * @param channel channel getName to retrieve
+     * @return
+     */
+    public IRCChannel getChannel(String channel) {
+        return channels.get(channel.toLowerCase());
+    }
+
+    /**
+     * Sends a message to part from a channel. If the channel is not monitored,
+     * this does nothing.
+     *
+     * @param channel the channel to leave
+     * @param message parting message
+     */
+    public void part(String channel, String message) {
+        part(channels.get(channel.toLowerCase()), message);
+    }
+
+    /**
+     * Sends a message to part from a channel. If the channel is not monitored,
+     * this does nothing.
+     *
+     * @param channel the channel to leave
+     */
+    public void part(String channel) {
+        part(channels.get(channel.toLowerCase()), null);
+    }
+
+    /**
+     * Sends a message to part from a channel.
+     *
+     * @param channel the channel to leave
+     * @param message parting message
+     */
+    protected void part(IRCChannel channel, String message) {
+        if (channel == null) {
+            return;
+        }
+
+        channels.remove(channel.getName());
+        send("PART " + channel.getName() + (message == null ? "" : " :" + message));
+    }
+
+    /**
+     * Quits the server
+     *
+     * @param message
+     */
+    public void quit(String message) {
+        channels.clear();
+        details.connected = false;
+        details.identified = false;
+        send("QUIT " + (message == null ? "" : " :" + message));
+    }
+
+    /**
+     * Quits the server
+     *
+     */
+    public void quit() {
+        quit(null);
     }
 
     /**
@@ -362,7 +463,7 @@ public final class IRCServer {
      *
      * @return a class containing data about the server connection
      */
-    public IRCServerDetails details() {
+    public IRCServerDetails getDetails() {
         return details;
     }
 }

@@ -24,52 +24,9 @@
 package me.aliceq.irc;
 
 /**
- * Data class containing details about an IRCServer. It is recommended to use
- * this as read-only.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class IRCServerDetails {
-
-    /**
-     * Identity used to connect to server
-     */
-    public IRCIdentity identity;
-
-    /**
-     * Current nickname
-     */
-    public String currentNick;
+public class SortedList {
     
-    /**
-     * Server socket connection status
-     */
-    public boolean socketConnected;
-    /**
-     * Server socket connection port
-     */
-    public int socketPort;
-    /**
-     * Server socket connection address
-     */
-    public String socketAddress;
-
-    /**
-     * True when a connection to the IRC server is established
-     */
-    public boolean connected;
-    /**
-     * True when the current nickname is identified with NickServ
-     */
-    public boolean identified;
-    /**
-     * True if the current nickname is already registered with NickServ
-     */
-    public boolean registered;
-
-    /**
-     * True if the current nick was taken
-     */
-    public boolean nickIsTaken;
-
 }

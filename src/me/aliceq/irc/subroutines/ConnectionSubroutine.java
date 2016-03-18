@@ -47,20 +47,20 @@ public final class ConnectionSubroutine extends IRCSubroutine {
         // Verify connection or not
         switch (msg.getType()) {
             case "001":
-                server.details().connected = true;
+                server.getDetails().connected = true;
                 break;
             case "433":
-                server.details().nickIsTaken = true;
+                server.getDetails().nickIsTaken = true;
                 return;
         }
 
         // Nickserv registration message
         if (getMessage("NickServ").getMessage().contains("This nickname is registered")) {
-            server.details().registered = true;
+            server.getDetails().registered = true;
 
             // Nickserv identification message
             if (getMessage("NickServ").getMessage().contains("You are now identified for")) {
-                server.details().identified = true;
+                server.getDetails().identified = true;
             }
         }
     }

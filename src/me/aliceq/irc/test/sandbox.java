@@ -34,20 +34,20 @@ public class sandbox {
 
     public static void main(String[] args) {
         IRCServer server = new IRCServer("irc.esper.net", 6667, false);
-        IRCIdentity me = new IRCIdentity("AliceTest", "AliceBot");
+        IRCIdentity me = new IRCIdentity("AliceTest", "AliceTest");
 
         server.start();
         server.identify(me);
 
-        server.runSubroutine(new PrintIncomingSubroutine("[%D|%S:%R] %M"));
+       // server.runSubroutine(new PrintIncomingSubroutine("[%D|%T|%S|%R]%M"));
 
         try {
-            Thread.sleep(10000);    // Quit after 10s
+            Thread.sleep(8000);
 
-            System.out.println("connected " + server.details().connected);
-            System.out.println("taken " + server.details().nickIsTaken);
-            System.out.println("registered " + server.details().registered);
-            System.out.println("identified " + server.details().identified);
+            server.join("#Wonderland");
+
+            Thread.sleep(30000);    // Quit after 10s
+            Thread.sleep(1000);
 
         } catch (InterruptedException e) {
 

@@ -92,6 +92,15 @@ public class IRCMessage {
     }
 
     /**
+     * Returns the receiver
+     *
+     * @return
+     */
+    public String getReceiver() {
+        return receiver;
+    }
+
+    /**
      * Returns the type
      *
      * @return
@@ -149,6 +158,57 @@ public class IRCMessage {
      */
     public Date getDateTime() {
         return time;
+    }
+
+    /**
+     * Returns true if the message type equals the value, ignoring case
+     *
+     * @param value value to check
+     * @return
+     */
+    public boolean typeEquals(String value) {
+        return this.type.equalsIgnoreCase(value);
+    }
+
+    /**
+     * Returns true if the message sender equals the value, ignoring case
+     *
+     * @param value value to check
+     * @return
+     */
+    public boolean senderEquals(String value) {
+        return this.getSender().equalsIgnoreCase(value);
+    }
+
+    /**
+     * Returns true if the message sender's full name equals the value, ignoring
+     * case
+     *
+     * @param value value to check
+     * @return
+     */
+    public boolean fullSenderEquals(String value) {
+        return this.sender.equalsIgnoreCase(value);
+    }
+
+    /**
+     * Returns true if the message hostname equals the value, ignoring case
+     *
+     * @param value value to check
+     * @return
+     */
+    public boolean hostEquals(String value) {
+        return this.getHostname().equalsIgnoreCase(value);
+    }
+
+    /**
+     * Returns true if the message receiver equals the value, ignoring case
+     *
+     * @param value value to check
+     * @return
+     */
+    public boolean receiverEquals(String value) {
+        return this.receiver.equalsIgnoreCase(value);
     }
 
     /**
