@@ -29,10 +29,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import me.aliceq.irc.internal.IRCMessageRequest;
 import me.aliceq.irc.subroutines.ChannelMonitoringSubroutine;
 import me.aliceq.irc.subroutines.ConnectionSubroutine;
@@ -50,7 +53,7 @@ public final class IRCServer {
 
     private boolean verbose = false;
 
-    private final List<IRCMessageRequest> requests = new LinkedList();
+    private final List<IRCMessageRequest> requests = new ArrayList(3);
 
     private int activeThreadCount = 0;
 
@@ -177,10 +180,10 @@ public final class IRCServer {
                                 server.validate(IRCMessage.parseFrom(line));
                             }
                         }
-
-                        Thread.sleep(100);
-                    } catch (IOException | InterruptedException e) {
-
+                    } catch (IOException ex) {
+                        if (server.verbose) {
+                            System.out.println(ex);
+                        }
                     }
                 }
             }
@@ -214,9 +217,9 @@ public final class IRCServer {
         details.identity = identity;
         details.currentNick = identity.nickname();
 
-        // Initialize subroutine
-        IRCSubroutine subroutine = new ConnectionSubroutine();
-        runSubroutine(subroutine);
+        // Initialize subroutines
+        runSubroutine(new ConnectionSubroutine());
+        runSubroutine(new ChannelMonitoringSubroutine());
 
         // Flush messages
         flush();
@@ -267,7 +270,7 @@ public final class IRCServer {
      * @param channels the channels to join, comma-separated
      */
     public void join(String channels) {
-        join(channels, null);
+        join(channels, "");
     }
 
     /**
@@ -278,24 +281,7 @@ public final class IRCServer {
      * @param passwords the channel passwords, comma-separated
      */
     public void join(String channels, String passwords) {
-        for (String channel : channels.toLowerCase().split(",")) {
-            IRCChannel instance = new IRCChannel(channel);
-            runSubroutine(new ChannelMonitoringSubroutine(instance));
-
-            this.channels.put(channel, instance);
-        }
-
-        send("JOIN " + channels + (passwords == null ? "" : " " + passwords));
-    }
-
-    /**
-     * Returns the IRCChannel instance of the given channel, if there is one
-     *
-     * @param channel channel getName to retrieve
-     * @return
-     */
-    public IRCChannel getChannel(String channel) {
-        return channels.get(channel.toLowerCase());
+        send("JOIN " + channels + " " + passwords);
     }
 
     /**
@@ -405,9 +391,11 @@ public final class IRCServer {
             System.out.println(message + " [" + requests.size() + "]");
         }
 
-        // Check all the requests to see if any of them want the message
-        for (IRCMessageRequest request : requests) {
-            request.validate(message);
+        // Iterate through the requests using a for-loop to avoid concurrent modification
+        for (int i = 0; i < requests.size(); i++) {
+            if (requests.get(i).validate(message)) {
+                requests.remove(i);
+            }
         }
     }
 
@@ -465,5 +453,66 @@ public final class IRCServer {
      */
     public IRCServerDetails getDetails() {
         return details;
+    }
+
+    /**
+     * Returns the IRCChannel entity of the specified name. If the channel does
+     * not exist, a new instance is made for it.
+     *
+     * @param name The name of the channel
+     * @return an IRCChannel entity or null
+     */
+    public IRCChannel getChannel(String name) {
+        String key = name.toLowerCase();
+        IRCChannel instance = channels.get(key);
+        if (instance == null) {
+            instance = new IRCChannel(name);
+            channels.put(key, instance);
+        }
+
+        return instance;
+    }
+
+    /**
+     * Returns a collection of all IRCChannel entries
+     *
+     * @return a collection of IRCChannels
+     */
+    public Collection<IRCChannel> getChannels() {
+        return channels.values();
+    }
+
+    /**
+     * Registers a new channel with the server, creating an IRCChannel instance
+     * for it. If there already exists a channel under that name, this does
+     * nothing.
+     *
+     * @param name the name of the channel
+     * @return an iRCInstance corresponding to the channel
+     */
+    public IRCChannel registerChannel(String name) {
+        IRCChannel current = channels.get(name.toLowerCase());
+        if (current != null) {
+            return current;
+        }
+
+        IRCChannel c = new IRCChannel(name);
+        channels.put(name.toLowerCase(), c);
+        return c;
+    }
+
+    /**
+     * Removes an IRCChannel from the server, preventing it from continuing to
+     * be monitored
+     *
+     * @param name the name of the channel
+     */
+    public void unregisterChannel(String name) {
+        channels.remove(name);
+    }
+
+    @Override
+    public String toString() {
+        return "Server@" + socket.getLocalAddress() + ":" + socket.getRemotePort() + " <" + channels.size() + ">";
     }
 }

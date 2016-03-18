@@ -21,41 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.test;
-
-import me.aliceq.irc.*;
-import me.aliceq.irc.subroutines.PrintIncomingSubroutine;
+package me.aliceq.irc.subroutines;
 
 /**
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class sandbox {
-
-    public static void main(String[] args) {
-        IRCServer server = new IRCServer("irc.esper.net", 6667, false);
-        IRCIdentity me = new IRCIdentity("AliceTest", "AliceBot", "test");
-
-        server.setVerbose();
-        server.start();
-        server.identify(me);
-
-        // server.runSubroutine(new PrintIncomingSubroutine("INCOMING FOR %R [%W]"));
-        try {
-            // Wait until connected
-            while (!server.getDetails().connected) {
-                Thread.sleep(500);
-            }
-
-            System.out.println("Joining wonderland!");
-            server.join("#Wonderland");
-
-            Thread.sleep(15000);    // Quit after 15s
-
-            server.quit("Goodbyte world!");
-        } catch (InterruptedException e) {
-            server.quit("Goodbyte world!");
-        }
-        System.out.println("Program exit");
-    }
+class IRCListener {
+    
 }

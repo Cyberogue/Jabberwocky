@@ -46,10 +46,10 @@ public final class ConnectionSubroutine extends IRCSubroutine {
 
         // Verify connection or not
         switch (msg.getType()) {
-            case "001":
+            case "001": // RPL_WELCOME
                 server.getDetails().connected = true;
                 break;
-            case "433":
+            case "433": // NICK TAKEN
                 server.getDetails().nickIsTaken = true;
                 return;
         }

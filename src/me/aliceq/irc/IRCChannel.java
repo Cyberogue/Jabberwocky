@@ -36,6 +36,7 @@ public class IRCChannel {
     final private String name;
     final private ArrayList<String> users = new ArrayList();
 
+    private String topic = "";
     private boolean connected = false;
     private int status = 0;
 
@@ -111,7 +112,8 @@ public class IRCChannel {
     }
 
     /**
-     * Checks if there was an error with the channel (status is between 400 and 599)
+     * Checks if there was an error with the channel (status is between 400 and
+     * 599)
      *
      * @return
      */
@@ -125,7 +127,7 @@ public class IRCChannel {
      * @return
      */
     public boolean isBanned() {
-        return status == 474;
+        return status == IRCCode.ERR_BANNEDFROMCHAN || status == IRCCode.ERR_YOUREBANNEDCREEP || status == IRCCode.ERR_YOUWILLBEBANNED;
     }
 
     /**
@@ -144,6 +146,24 @@ public class IRCChannel {
      */
     public void setStatus(int mode) {
         status = mode;
+    }
+
+    /**
+     * Sets the channel topic
+     *
+     * @param topic the topic
+     */
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    /**
+     * Returns the channel topic
+     *
+     * @return the channel topic
+     */
+    public String getTopic() {
+        return topic;
     }
 
     @Override

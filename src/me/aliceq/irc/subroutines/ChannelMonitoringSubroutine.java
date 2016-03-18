@@ -24,6 +24,7 @@
 package me.aliceq.irc.subroutines;
 
 import me.aliceq.irc.IRCChannel;
+import me.aliceq.irc.IRCCode;
 import me.aliceq.irc.IRCMessage;
 import me.aliceq.irc.IRCMessageListener;
 import me.aliceq.irc.IRCSubroutine;
@@ -36,99 +37,130 @@ import me.aliceq.irc.IRCSubroutine;
  */
 public class ChannelMonitoringSubroutine extends IRCSubroutine {
 
-    final private IRCChannel channel;
-
-    public ChannelMonitoringSubroutine(IRCChannel channel) {
-        this.channel = channel;
-    }
-
     @Override
     public void run() {
-        System.out.println("Monitoring channel " + channel.getName());
-
-        // Get the next message with a mode
-        IRCMessage message = getMessage(new IRCMessageListener() {
-            @Override
-            public boolean check(IRCMessage message) {
-                return message.getMode() > 0;
-            }
-        });
-
-        // Update current nickname
-        server.getDetails().currentNick = message.getReceiver();
-
-        if (message.getMode() == 353) {
-            // Success!
-            channel.setStatus(353);
-
-            // Extract nicks from the message
-            String s = message.getMessage();
-            s = s.substring(s.indexOf(':') + 1, s.length());
-
-            // And add to list
-            for (String nick : s.split(" ")) {
-                channel.addUser(nick);
-            }
-        }
-
+        // Listener returns any message that has a numeric mode (error, etc)
+        // or that is a non-PRIVMSG directed at a channel
+        //
+        // Catching PRIVMSG now istead of after fetching results in slightly 
+        //lower memory usage, as getting each message takes resources
         IRCMessageListener listener = new IRCMessageListener() {
             @Override
             public boolean check(IRCMessage message) {
-                return message.getDestination().equals(channel.getName());
+                return message.numericType() || (message.getDestination().charAt(0) == '#' && !message.typeEquals("PRIVMSG"));
             }
         };
 
-        System.out.println(channel.hasError());
-        while (!channel.hasError()) {
-            message = this.getMessage(listener);
+        // Run indefinitely (thread is a daemon)
+        while (true) {
+            // Get the next message
+            IRCMessage message = getMessage(listener);
 
-            System.out.println(message.toString("%S|%T|%M"));
-
-            if (message.typeEquals("PRIVMSG")) {
-                // This is the most common message so an early check reduces computations
-                continue;
+            // Check whether it's a numeric response or a command
+            if (message.numericType()) {
+                parseMode(message.getMode(), message);
+            } else {
+                parseCommand(message.getType(), message);
             }
-
-            if (message.typeEquals("JOIN")) {
-                channel.addUser(message.getSender());
-            } else if (message.typeEquals("PART")) {
-                channel.removeUser(message.getSender());
-            } else if (message.typeEquals("KICK")) {
-                channel.removeUser(message.getSender());
-                if (message.getSender().equalsIgnoreCase(server.getDetails().currentNick)) {
-                    // We were kicked, set the banned/kicked flag
-                    channel.setStatus(353);
-                }
-            } else if (message.typeEquals("NICK")) {
-            } else if (message.typeEquals("MODE")) {
-                String s = message.getMessage();
-                int split = s.indexOf(" ");
-                String modes = s.substring(0, split);
-                String user = s.substring(split + 1, s.length());
-
-                // Parse flags
-                boolean add = true; // false = remove
-                for (int i = 0; i < modes.length(); i++) {
-                    switch (modes.charAt(i)) {
-                        case '+':
-                            add = true;
-                            break;
-                        case '-':
-                            add = false;
-                            break;
-                        case 'v':
-                        case 'V':
-                            channel.replaceUser(user, "+" + user);
-                            break;
-                        case 'o':
-                        case 'O':
-                            channel.replaceUser(user, "@" + user);
-                            break;
-                    }
-                }
-            }
-            System.out.println(channel.getUsers());
         }
     }
 
+    private void parseMode(int mode, IRCMessage message) {
+        // Get index of colon
+        String m = message.getMessage();
+        int index = m.indexOf(':');
+
+        // Extract current username
+        server.getDetails().currentNick = message.getReceiver();
+
+        // Parse
+        if (mode == IRCCode.RPL_NAMREPLY) { // List of names, extract current users
+            // Extract channel
+            IRCChannel channel = server.getChannel(m.substring(2, index - 1));
+
+            // Extract users and add
+            for (String nick : m.substring(index + 1).split(" ")) { // Add each nick
+                channel.addUser(nick);
+            }
+
+            if (server.isVerbose()) {
+                System.out.println("Users in " + channel.getName() + ": " + channel.getUsers());
+            }
+        } else if (mode == IRCCode.RPL_TOPIC) {// Set the channel topic
+            // Set the channel topic
+            // Extract channel
+            IRCChannel channel = server.getChannel(m.substring(0, index - 1));
+            channel.setTopic(m.substring(index + 1));
+            if (server.isVerbose()) {
+                System.out.println("Topic for  " + channel.getName() + ": " + channel.getTopic());
+            }
+            
+            // If we don't have an user list ask for one
+            if (channel.getUsers().isEmpty()) {
+                this.send("NAMES " + channel.getName());
+            }
+        }
+    }
+
+    private void parseCommand(String command, IRCMessage message) {
+        String channel = message.getDestination();
+
+        switch (message.getType().toUpperCase()) {
+            case "JOIN":
+                if (message.senderEquals(server.getDetails().currentNick)) {
+                    break;
+                }
+                server.getChannel(channel).addUser(message.getSender());
+                if (server.isVerbose()) {
+                    System.out.println("Person joined " + channel);
+                }
+                break;
+            case "PART":
+            case "QUIT":
+            case "KICK":
+                if (message.senderEquals(server.getDetails().currentNick)) {
+                    server.unregisterChannel(channel);
+                    if (server.isVerbose()) {
+                        System.out.println("Program left " + channel);
+                    }
+                } else {
+                    server.getChannel(channel).removeUser(message.getSender());
+                    if (server.isVerbose()) {
+                        System.out.println(message.getSender() + " left " + channel);
+                    }
+                }
+                break;
+            case "MODE": {
+                int index = message.getMessage().indexOf(' ');
+                String user = message.getMessage().substring(index + 1);
+                String mode = message.getMessage().substring(0, index);
+                boolean toggle = true;   // true = add, false = remove
+                for (int i = 0; i < mode.length(); i++) {
+                    switch (mode.charAt(i)) {
+                        case '+':
+                            toggle = true;
+                        case '-':
+                            toggle = false;
+                        case 'v':
+                        case 'V':
+                            if (toggle) {
+                                server.getChannel(channel).replaceUser(user, "+" + user);
+                            }
+                        case 'o':
+                        case 'O':
+                            if (toggle) {
+                                server.getChannel(channel).replaceUser(user, "@" + user);
+                                break;
+                            }
+                    }
+                }
+
+                if (server.isVerbose()) {
+                    System.out.println("Changed user mode for  " + channel + ":" + user + " to " + mode);
+                }
+            }
+            break;
+        }
+
+    }
 }

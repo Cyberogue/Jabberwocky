@@ -124,6 +124,15 @@ public class IRCMessage {
     }
 
     /**
+     * Returns true if the message type is numeric
+     *
+     * @return true if the message type is numeric
+     */
+    public boolean numericType() {
+        return type.matches("[0-9]*");
+    }
+
+    /**
      * Returns the receiver username or channel
      *
      * @return
@@ -228,28 +237,28 @@ public class IRCMessage {
         instance.time = new Date();
         // Source
         if (tokens.length > 0) {
-            instance.sender = tokens[0].substring(1);
+            instance.sender = tokens[0].substring(1).trim();
         } else {
             return instance;
         }
 
         // Type
         if (tokens.length > 1) {
-            instance.type = tokens[1];
+            instance.type = tokens[1].trim();
         } else {
             return instance;
         }
 
         // Destination
         if (tokens.length > 2) {
-            instance.receiver = tokens[2];
+            instance.receiver = tokens[2].trim();
         } else {
             return instance;
         }
 
         // Message
         if (tokens.length > 3) {
-            instance.message = tokens[3];
+            instance.message = tokens[3].trim();
         }
         return instance;
     }
@@ -269,6 +278,7 @@ public class IRCMessage {
      * %T : type<br>
      * %M : message<br>
      * %D : date/time in default format<br>
+     * %W : raw message<br>
      *
      * @param format the message format
      * @return a formatted message String
@@ -287,6 +297,7 @@ public class IRCMessage {
      * %T : type<br>
      * %M : message<br>
      * %D : date/time in specified format<br>
+     * %W : raw message<br>
      *
      * @param format the message format
      * @param dateformat the date-time format
@@ -304,6 +315,7 @@ public class IRCMessage {
         s = s.replace("%R", receiver == null ? "" : receiver);
         s = s.replace("%T", type == null ? "" : type);
         s = s.replace("%M", message == null ? "" : message);
+        s = s.replace("%W", raw == null ? "" : raw);
         s = s.replace("%D", time == null ? "" : dateformat.format(time));
 
         return s;
