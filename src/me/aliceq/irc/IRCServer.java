@@ -50,6 +50,8 @@ public final class IRCServer {
 
     private int activeThreadCount = 0;
 
+    private final IRCServerDetails details = new IRCServerDetails();
+
     /**
      * Basic constructor
      *
@@ -57,7 +59,7 @@ public final class IRCServer {
      * @param port the port to connect through
      */
     public IRCServer(String address, int port) {
-        this.socket = new IRCSocket(address, port);
+        this(new IRCSocket(address, port));
     }
 
     /**
@@ -68,7 +70,7 @@ public final class IRCServer {
      * @param secure if true an SSL connection is attempted
      */
     public IRCServer(String address, int port, boolean secure) {
-        this.socket = new IRCSocket(address, port, secure);
+        this(new IRCSocket(address, port, secure));
     }
 
     /**
@@ -78,6 +80,9 @@ public final class IRCServer {
      */
     public IRCServer(IRCSocket socket) {
         this.socket = socket;
+
+        this.details.socketAddress = socket.getLocalAddress();
+        this.details.socketPort = socket.getLocalPort();
     }
 
     /**
@@ -85,6 +90,15 @@ public final class IRCServer {
      */
     public void setVerbose() {
         this.verbose = true;
+    }
+
+    /**
+     * Returns whether or not the server is isVerbose
+     *
+     * @return whether or not the server is isVerbose
+     */
+    public boolean isVerbose() {
+        return this.verbose;
     }
 
     /**
@@ -120,6 +134,9 @@ public final class IRCServer {
             throw new IRCException("Server is not connected");
         }
 
+        // Set details
+        details.socketConnected = true;
+
         // Create output writer
         try {
             outstream = new PrintWriter(this.socket.getOutputStream(), true);
@@ -134,6 +151,9 @@ public final class IRCServer {
 
         final BufferedReader in = instream;
         final IRCServer server = this;
+
+        // Increment thread count
+        activeThreadCount++;
 
         // Create a new thread to read messages
         Thread thread = new Thread(new Runnable() {
@@ -184,9 +204,11 @@ public final class IRCServer {
                 + " " + identity.getMode()
                 + " * :" + identity.realname());
 
+        // Set identity
+        details.identity = identity;
+
         // Initialize subroutine
         IRCSubroutine subroutine = new ConnectionSubroutine();
-        subroutine.server = this;
         runSubroutine(subroutine);
 
         // Flush messages
@@ -258,7 +280,7 @@ public final class IRCServer {
      *
      * @param request the message request to add
      */
-    public void addRequest(IRCMessageRequest request) {
+    public synchronized void addRequest(IRCMessageRequest request) {
         requests.add(request);
     }
 
@@ -267,7 +289,7 @@ public final class IRCServer {
      *
      * @param request the message request to remove
      */
-    public void removeRequest(IRCMessageRequest request) {
+    public synchronized void removeRequest(IRCMessageRequest request) {
         requests.remove(request);
     }
 
@@ -293,6 +315,8 @@ public final class IRCServer {
      * monitoring it
      *
      * @param subroutine the subroutine to run
+     * @throws UnsupportedOperationException if this is called before starting
+     * the server
      */
     public void runSubroutine(IRCSubroutine subroutine) {
         runSubroutine(subroutine, Thread.MIN_PRIORITY);
@@ -303,9 +327,12 @@ public final class IRCServer {
      *
      * @param subroutine the subroutine to run
      * @param priority the Thread priority to give the subroutine
+     * @throws UnsupportedOperationException if this is called before starting
+     * the server
      */
     public void runSubroutine(IRCSubroutine subroutine, int priority) {
         final IRCSubroutine sub = subroutine;
+        sub.server = this;
 
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -319,5 +346,23 @@ public final class IRCServer {
         thread.setPriority(priority);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /**
+     * Returns the number of active threads managed by the system
+     *
+     * @return the number of active threads managed by the system
+     */
+    public int activeThreads() {
+        return activeThreadCount;
+    }
+
+    /**
+     * Returns a class containing data about the server connection
+     *
+     * @return a class containing data about the server connection
+     */
+    public IRCServerDetails details() {
+        return details;
     }
 }

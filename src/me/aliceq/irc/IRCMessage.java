@@ -33,69 +33,134 @@ import java.util.Date;
  */
 public class IRCMessage {
 
-    public String raw;
-    public String source;
-    public String type;
-    public String destination;
-    public String message;
-    public Date time;
+    private String raw;
+    private String sender;
+    private String type;
+    private String receiver;
+    private String message;
+    private Date time;
 
-    /**
-     * Returns true if the message source equals the specified source
-     *
-     * @param source source to check
-     * @return true if the message source equals the specified source
-     */
-    public boolean isSource(String source) {
-        return this.source.equals(source);
+    protected IRCMessage() {
+
     }
 
     /**
-     * Returns true if the message type equals the specified type
+     * Returns the raw IRC message
      *
-     * @param type type to check
-     * @return true if the message type equals the specified type
+     * @return
      */
-    public boolean isType(String type) {
-        return this.type.equals(type);
+    public String getRaw() {
+        return raw;
     }
 
     /**
-     * Returns true if the message type is a number whose value equals the
-     * specified value
+     * Returns the full sender of format user!hostname
      *
-     * @param mode value to check
-     * @return true if the message type is a number and matches the specified
-     * mode value
+     * @return
      */
-    public boolean isMode(int mode) {
-        if (type.matches("[0-9]*")) {
-            return Integer.parseInt(this.type) == mode;
+    public String getSenderFull() {
+        return sender;
+    }
+
+    /**
+     * Returns the sender of the message minus the hostname
+     *
+     * @return
+     */
+    public String getSender() {
+        int i = sender.indexOf('!');
+        if (i < 0) {
+            return sender;
         } else {
-            return false;
+            return sender.substring(0, i);
         }
     }
 
     /**
-     * Returns true if the message destination equals the specified destination
+     * Returns the sender hostname of the message. If there is none a blank
+     * String is returned.
      *
-     * @param destination destination to check
-     * @return true if the message destination equals the specified destination
+     * @return
      */
-    public boolean isDestination(String destination) {
-        return this.destination.equals(destination);
+    public String getHostname() {
+        int i = sender.indexOf('!');
+        if (i < 0) {
+            return "";
+        } else {
+            return sender.substring(i + 1, sender.length() - 1);
+        }
+    }
+
+    /**
+     * Returns the type
+     *
+     * @return
+     */
+    public String getType() {
+        return type;
+    }
+
+    /**
+     * If the message type is a number it returns the value of the type,
+     * otherwise returns -1
+     *
+     * @return
+     */
+    public int getMode() {
+        if (type.matches("[0-9]*")) {
+            return Integer.parseInt(type);
+        } else {
+            return -1;
+        }
+    }
+
+    /**
+     * Returns the receiver username or channel
+     *
+     * @return
+     */
+    public String getDestination() {
+        return receiver;
+    }
+
+    /**
+     * Returns the internal message
+     *
+     * @return
+     */
+    public String getMessage() {
+        return message;
+    }
+
+    /**
+     * Returns the internal message in lowercase. This is useful for parsing
+     * commands.
+     *
+     * @return
+     */
+    public String getMessageLower() {
+        return message.toLowerCase();
+    }
+
+    /**
+     * Returns the date/time the message was received
+     *
+     * @return
+     */
+    public Date getDateTime() {
+        return time;
     }
 
     /**
      * Parses a raw string message into an IRCMessage container. The message is
-     * parsed using the format :[source] [type] [destination] :[message]
+     * parsed using the format :[sender] [type] [receiver] :[message]
      *
      * @param raw the raw message to parse
      * @return a new IRCMessage instance
      */
     public static final IRCMessage parseFrom(String raw) {
         // Tokenize into max 5 tokens
-        String[] tokens = raw.split("\\s", 4);
+        String[] tokens = raw.split("\\s+:?", 4);
 
         // Create new instance
         IRCMessage instance = new IRCMessage();
@@ -103,7 +168,7 @@ public class IRCMessage {
         instance.time = new Date();
         // Source
         if (tokens.length > 0) {
-            instance.source = tokens[0].substring(1);
+            instance.sender = tokens[0].substring(1);
         } else {
             return instance;
         }
@@ -117,14 +182,14 @@ public class IRCMessage {
 
         // Destination
         if (tokens.length > 2) {
-            instance.destination = tokens[2];
+            instance.receiver = tokens[2];
         } else {
             return instance;
         }
 
         // Message
         if (tokens.length > 3) {
-            instance.message = tokens[3].substring(1);
+            instance.message = tokens[3];
         }
         return instance;
     }
@@ -137,11 +202,13 @@ public class IRCMessage {
     /**
      * Converts a message into a string following the specified format.
      * <p>
-     * %S : source<br>
-     * %U : destination<br>
+     * %S : sender <br>
+     * %H : sender host-name<br>
+     * %F : full sender ID<br>
+     * %R : receiver<br>
      * %T : type<br>
      * %M : message<br>
-     * %D : date/time in full format<br>
+     * %D : date/time in default format<br>
      *
      * @param format the message format
      * @return a formatted message String
@@ -153,11 +220,13 @@ public class IRCMessage {
     /**
      * Converts a message into a string following the specified format.
      * <p>
-     * %S : source<br>
-     * %U : destination<br>
+     * %S : sender <br>
+     * %H : sender host-name<br>
+     * %F : full sender ID<br>
+     * %R : receiver<br>
      * %T : type<br>
      * %M : message<br>
-     * %D : date/time in specified<br>
+     * %D : date/time in specified format<br>
      *
      * @param format the message format
      * @param dateformat the date-time format
@@ -166,8 +235,13 @@ public class IRCMessage {
     public String toString(String format, DateFormat dateformat) {
         String s = format;
 
-        s = s.replace("%S", source == null ? "" : source);
-        s = s.replace("%U", destination == null ? "" : destination);
+        String user = sender == null ? "" : this.getSender();
+        String host = sender == null ? "" : this.getHostname();
+
+        s = s.replace("%F", user + (host.equals("") ? "" : "!" + host));
+        s = s.replace("%S", user);
+        s = s.replace("%H", host);
+        s = s.replace("%R", receiver == null ? "" : receiver);
         s = s.replace("%T", type == null ? "" : type);
         s = s.replace("%M", message == null ? "" : message);
         s = s.replace("%D", time == null ? "" : dateformat.format(time));

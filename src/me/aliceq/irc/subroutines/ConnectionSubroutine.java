@@ -32,25 +32,36 @@ import me.aliceq.irc.IRCSubroutine;
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class ConnectionSubroutine extends IRCSubroutine {
+public final class ConnectionSubroutine extends IRCSubroutine {
 
     @Override
     public void run() {
-        System.out.println("Connection initialized");
-
-        IRCMessage start = getMessage(new IRCMessageListener() {
+        // Search for either a 001 connection success or 433 nick taken error
+        IRCMessage msg = getMessage(new IRCMessageListener() {
             @Override
             public boolean check(IRCMessage message) {
-                return message.isMode(1);
+                return message.getType().equals("001") || message.getType().equals("433");
             }
         });
 
-        System.out.println("ASDAWDAWD " + start);
+        // Verify connection or not
+        switch (msg.getType()) {
+            case "001":
+                server.details().connected = true;
+                break;
+            case "433":
+                server.details().nickIsTaken = true;
+                return;
+        }
 
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
+        // Nickserv registration message
+        if (getMessage("NickServ").getMessage().contains("This nickname is registered")) {
+            server.details().registered = true;
 
+            // Nickserv identification message
+            if (getMessage("NickServ").getMessage().contains("You are now identified for")) {
+                server.details().identified = true;
+            }
         }
     }
 

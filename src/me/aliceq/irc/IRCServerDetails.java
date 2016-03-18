@@ -21,37 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.test;
-
-import me.aliceq.irc.*;
-import me.aliceq.irc.subroutines.PrintIncomingSubroutine;
+package me.aliceq.irc;
 
 /**
+ * Data class containing details about an IRCServer. It is recommended to use
+ * this as read-only.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class sandbox {
+public class IRCServerDetails {
 
-    public static void main(String[] args) {
-        IRCServer server = new IRCServer("irc.esper.net", 6667, false);
-        IRCIdentity me = new IRCIdentity("AliceTest", "AliceBot");
+    /**
+     * Identity used to connect to server
+     */
+    public IRCIdentity identity;
 
-        server.start();
-        server.identify(me);
+    /**
+     * Server socket connection status
+     */
+    public boolean socketConnected;
+    /**
+     * Server socket connection port
+     */
+    public int socketPort;
+    /**
+     * Server socket connection address
+     */
+    public String socketAddress;
 
-        server.runSubroutine(new PrintIncomingSubroutine("[%D|%S:%R] %M"));
+    /**
+     * True when a connection to the IRC server is established
+     */
+    public boolean connected;
+    /**
+     * True when the current nickname is identified with NickServ
+     */
+    public boolean identified;
+    /**
+     * True if the current nickname is already registered with NickServ
+     */
+    public boolean registered;
 
-        try {
-            Thread.sleep(10000);    // Quit after 10s
+    /**
+     * True if the current nick was taken
+     */
+    public boolean nickIsTaken;
 
-            System.out.println("connected " + server.details().connected);
-            System.out.println("taken " + server.details().nickIsTaken);
-            System.out.println("registered " + server.details().registered);
-            System.out.println("identified " + server.details().identified);
-
-        } catch (InterruptedException e) {
-
-        }
-        System.out.println("Quit");
-    }
 }

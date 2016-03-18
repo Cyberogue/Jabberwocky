@@ -87,7 +87,7 @@ public class IRCMessageRequest {
      * message
      */
     public synchronized IRCMessage push(long timeout) throws InterruptedException {
-        // Push request into the server
+// Push request into the server
         endpoint.addRequest(this);
 
         // Timeout

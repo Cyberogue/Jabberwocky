@@ -106,6 +106,22 @@ public final class IRCSocket {
         return socket.isConnected();
     }
 
+    public int getLocalPort() {
+        return socket.getLocalPort();
+    }
+
+    public int getRemotePort() {
+        return socket.getPort();
+    }
+
+    public String getLocalAddress() {
+        return socket.getLocalAddress().toString();
+    }
+
+    public String getRemoteAddress() {
+        return socket.getRemoteSocketAddress().toString();
+    }
+
     /**
      * Gets the socket's input stream
      *

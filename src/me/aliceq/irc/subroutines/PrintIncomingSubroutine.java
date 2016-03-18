@@ -21,37 +21,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc.test;
+package me.aliceq.irc.subroutines;
 
-import me.aliceq.irc.*;
-import me.aliceq.irc.subroutines.PrintIncomingSubroutine;
+import me.aliceq.irc.IRCSubroutine;
 
 /**
+ * Subroutine which simply prints all incoming messages
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class sandbox {
+public class PrintIncomingSubroutine extends IRCSubroutine {
 
-    public static void main(String[] args) {
-        IRCServer server = new IRCServer("irc.esper.net", 6667, false);
-        IRCIdentity me = new IRCIdentity("AliceTest", "AliceBot");
+    private String format = null;
 
-        server.start();
-        server.identify(me);
-
-        server.runSubroutine(new PrintIncomingSubroutine("[%D|%S:%R] %M"));
-
-        try {
-            Thread.sleep(10000);    // Quit after 10s
-
-            System.out.println("connected " + server.details().connected);
-            System.out.println("taken " + server.details().nickIsTaken);
-            System.out.println("registered " + server.details().registered);
-            System.out.println("identified " + server.details().identified);
-
-        } catch (InterruptedException e) {
-
-        }
-        System.out.println("Quit");
+    /**
+     * Default constructor which prints raw messages
+     */
+    public PrintIncomingSubroutine() {
     }
+
+    /**
+     * The format to use when printing new messages. See IRCMessage.toString for
+     * specification.
+     * <p>
+     * %S : sender <br>
+     * %H : sender host-name<br>
+     * %F : full sender ID. This is equal to %S!%H<br>
+     * %R : receiver<br>
+     * %T : type<br>
+     * %M : message<br>
+     * %D : date/time in default format<br>
+     *
+     * @param format String specification of message format
+     */
+    public PrintIncomingSubroutine(String format) {
+        this.format = format;
+    }
+
+    @Override
+    public void run() {
+
+        while (true) {
+            if (format == null) {
+                System.out.println(getMessage());
+            } else {
+                System.out.println(getMessage().toString(format));
+            }
+        }
+    }
+
 }

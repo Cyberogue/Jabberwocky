@@ -68,9 +68,9 @@ public abstract class IRCSubroutine {
         }
     }
 
-    public final synchronized IRCMessage getMessage(String source) {
+    public final synchronized IRCMessage getMessage(String sender) {
         try {
-            return getMessage(source, 0);
+            return getMessage(sender, 0);
         } catch (InterruptedException e) {
             return null;
         }
@@ -89,12 +89,12 @@ public abstract class IRCSubroutine {
         return request.push(timeout);
     }
 
-    public final synchronized IRCMessage getMessage(final String source, int timeout) throws InterruptedException {
-        final String s = source;
+    public final synchronized IRCMessage getMessage(final String sender, int timeout) throws InterruptedException {
+        final String s = sender;
         IRCMessageRequest request = new IRCMessageRequest(server, new IRCMessageListener() {
             @Override
             public boolean check(IRCMessage message) {
-                return message.source.equals(s);
+                return message.getSender().equals(s);
             }
         });
         return request.push(timeout);

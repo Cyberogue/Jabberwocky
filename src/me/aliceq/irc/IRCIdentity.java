@@ -23,6 +23,10 @@
  */
 package me.aliceq.irc;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Class containing information about a person's identity
  *
@@ -31,46 +35,74 @@ package me.aliceq.irc;
 public class IRCIdentity {
 
     final private String password;
-    final private String nickname;
     final private String username;
     final private String realname;
+    final private List<String> nicknames = new ArrayList(1);
 
-    final private boolean invisible;
-    final private boolean wallops;
+    private boolean invisible = false;
+    private boolean wallops = false;
 
     // Constructors
-    public IRCIdentity(String nickname) {
-        this(nickname, nickname, nickname, "", false, false);
+    public IRCIdentity(String username) {
+        this(username, username, username, "");
     }
 
-    public IRCIdentity(String nickname, String password) {
-        this(nickname, nickname, nickname, password, false, false);
+    public IRCIdentity(String username, String password) {
+        this(username, username, username, password);
     }
 
-    public IRCIdentity(String nickname, String username, String password) {
-        this(nickname, username, username, password, false, false);
+    public IRCIdentity(String username, String nickname, String password) {
+        this(username, nickname, username, password);
     }
 
-    public IRCIdentity(String nickname, String username, String realname, String password) {
-        this(nickname, username, realname, password, false, false);
-    }
-
-    public IRCIdentity(String nickname, String username, String realname, String password, boolean invisible) {
-        this(nickname, username, realname, password, invisible, false);
-    }
-
-    public IRCIdentity(String nickname, String username, String realname, String password, boolean invisible, boolean wallops) {
-        this.password = password;
-        this.nickname = nickname;
+    public IRCIdentity(String username, String nickname, String realname, String password) {
+        this.nicknames.clear();
         this.username = username;
+        this.nicknames.add(nickname);
         this.realname = realname;
+        this.password = password;
+    }
+
+    public IRCIdentity(String username, Collection<String> nicknames, String password) {
+        this(username, nicknames, username, password);
+    }
+
+    public IRCIdentity(String username, Collection<String> nicknames, String realname, String password) {
+        this.nicknames.clear();
+        this.username = username;
+        this.nicknames.addAll(nicknames);
+        this.realname = realname;
+        this.password = password;
+    }
+
+    // Modifiers
+    public void addNickname(String nick) {
+        nicknames.add(nick);
+    }
+
+    public void setInvisible(boolean invisible) {
         this.invisible = invisible;
+    }
+
+    public void setWallOps(boolean wallops) {
         this.wallops = wallops;
     }
 
-    // Gets
+    // Accessors
+    public int nickCount() {
+        return nicknames.size();
+    }
+
     public String nickname() {
-        return nickname;
+        return nicknames.get(0);
+    }
+
+    public String nickname(int index) {
+        return nicknames.get(index);
+    }
+
+    public Collection<String> nicknames() {
+        return nicknames;
     }
 
     public String username() {
