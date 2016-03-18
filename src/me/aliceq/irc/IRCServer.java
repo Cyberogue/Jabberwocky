@@ -28,17 +28,27 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.LinkedList;
+import java.util.List;
+import me.aliceq.irc.internal.IRCMessageRequest;
+import me.aliceq.irc.subroutines.ConnectionSubroutine;
+
 /**
- * Wrapper for a IRCSocket instance acting as a central node for its children
+ * Wrapper for a IRCSocket instance acting as a central node for its children.
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class IRCServer {
+public final class IRCServer {
 
     private final IRCSocket socket;
     private PrintWriter outstream;
     private BufferedReader instream;
+
     private boolean verbose = false;
+
+    private final List<IRCMessageRequest> requests = new LinkedList();
+
+    private int activeThreadCount = 0;
 
     /**
      * Basic constructor
@@ -123,10 +133,10 @@ public class IRCServer {
         }
 
         final BufferedReader in = instream;
+        final IRCServer server = this;
 
         // Create a new thread to read messages
         Thread thread = new Thread(new Runnable() {
-
             // TODO: Move all this to a dedicated ServerReader class
             @Override
             public void run() {
@@ -138,7 +148,7 @@ public class IRCServer {
                                 send("PONG " + line.substring(5, line.length()));
                             } else {
                                 // Otherwise parse the message
-                                System.out.println(line);
+                                server.validate(IRCMessage.parseFrom(line));
                             }
                         }
 
@@ -154,8 +164,8 @@ public class IRCServer {
     }
 
     /**
-     * Sends the appropriate messages to identify. If the connection is not
-     * ready this does nothing.
+     * Sends the appropriate messages to identify and runs the authentication
+     * subroutine. If the connection is not ready this does nothing.
      *
      * @param identity the identity to identify with
      */
@@ -164,6 +174,7 @@ public class IRCServer {
             return;
         }
 
+        // Write messages to send
         if (identity.password() != null) {
             write("PASS " + identity.password());
         }
@@ -172,7 +183,23 @@ public class IRCServer {
         write("USER " + identity.username()
                 + " " + identity.getMode()
                 + " * :" + identity.realname());
+
+        // Initialize subroutine
+        IRCSubroutine subroutine = new ConnectionSubroutine();
+        subroutine.server = this;
+        runSubroutine(subroutine);
+
+        // Flush messages
         flush();
+    }
+
+    /**
+     * Returns the current number of queued requests
+     *
+     * @return the current number of queued requests
+     */
+    public int activeRequests() {
+        return requests.size();
     }
 
     /**
@@ -224,5 +251,73 @@ public class IRCServer {
             System.out.println("[^] ");
         }
         outstream.flush();
+    }
+
+    /**
+     * Pushes a request into the stack
+     *
+     * @param request the message request to add
+     */
+    public void addRequest(IRCMessageRequest request) {
+        requests.add(request);
+    }
+
+    /**
+     * Removes a request from the stack
+     *
+     * @param request the message request to remove
+     */
+    public void removeRequest(IRCMessageRequest request) {
+        requests.remove(request);
+    }
+
+    /**
+     * Compares an incoming message to all of the current requests. If any
+     * requests match they are cleared and unblocked.
+     *
+     * @param message message to validate
+     */
+    protected synchronized void validate(IRCMessage message) {
+        if (verbose) {
+            System.out.println(message + " [" + requests.size() + "]");
+        }
+
+        // Check all the requests to see if any of them want the message
+        for (IRCMessageRequest request : requests) {
+            request.validate(message);
+        }
+    }
+
+    /**
+     * Places a low-priority subroutine on its own thread and runs it,
+     * monitoring it
+     *
+     * @param subroutine the subroutine to run
+     */
+    public void runSubroutine(IRCSubroutine subroutine) {
+        runSubroutine(subroutine, Thread.MIN_PRIORITY);
+    }
+
+    /**
+     * Places a subroutine on its own thread and runs it, monitoring it
+     *
+     * @param subroutine the subroutine to run
+     * @param priority the Thread priority to give the subroutine
+     */
+    public void runSubroutine(IRCSubroutine subroutine, int priority) {
+        final IRCSubroutine sub = subroutine;
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                activeThreadCount++;
+                sub.run();
+                activeThreadCount--;
+            }
+        });
+
+        thread.setPriority(priority);
+        thread.setDaemon(true);
+        thread.start();
     }
 }

@@ -23,10 +23,35 @@
  */
 package me.aliceq.irc.subroutines;
 
+import me.aliceq.irc.IRCMessage;
+import me.aliceq.irc.IRCMessageListener;
+import me.aliceq.irc.IRCSubroutine;
+
 /**
+ * Subroutine called by a server upon connecting to validate the connection
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class ConnectionSubroutine {
-    
+public class ConnectionSubroutine extends IRCSubroutine {
+
+    @Override
+    public void run() {
+        System.out.println("Connection initialized");
+
+        IRCMessage start = getMessage(new IRCMessageListener() {
+            @Override
+            public boolean check(IRCMessage message) {
+                return message.isMode(1);
+            }
+        });
+
+        System.out.println("ASDAWDAWD " + start);
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+
+        }
+    }
+
 }

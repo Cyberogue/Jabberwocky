@@ -21,12 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.aliceq.irc;
+package me.aliceq.irc.internal;
 
 /**
+ * Thread which reads messages from a server socket and adds them to the server
+ * queue
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class LocalDateTime {
+public class IRCServerReader implements Runnable {
+
     
+    
+    @Override
+    public void run() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

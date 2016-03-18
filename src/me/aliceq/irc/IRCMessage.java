@@ -24,7 +24,6 @@
 package me.aliceq.irc;
 
 import java.text.DateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -41,8 +40,50 @@ public class IRCMessage {
     public String message;
     public Date time;
 
-    protected IRCMessage() {
+    /**
+     * Returns true if the message source equals the specified source
+     *
+     * @param source source to check
+     * @return true if the message source equals the specified source
+     */
+    public boolean isSource(String source) {
+        return this.source.equals(source);
+    }
 
+    /**
+     * Returns true if the message type equals the specified type
+     *
+     * @param type type to check
+     * @return true if the message type equals the specified type
+     */
+    public boolean isType(String type) {
+        return this.type.equals(type);
+    }
+
+    /**
+     * Returns true if the message type is a number whose value equals the
+     * specified value
+     *
+     * @param mode value to check
+     * @return true if the message type is a number and matches the specified
+     * mode value
+     */
+    public boolean isMode(int mode) {
+        if (type.matches("[0-9]*")) {
+            return Integer.parseInt(this.type) == mode;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Returns true if the message destination equals the specified destination
+     *
+     * @param destination destination to check
+     * @return true if the message destination equals the specified destination
+     */
+    public boolean isDestination(String destination) {
+        return this.destination.equals(destination);
     }
 
     /**

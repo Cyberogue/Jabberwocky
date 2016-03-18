@@ -32,11 +32,11 @@ package me.aliceq.irc;
 public interface IRCMessageListener {
 
     /**
-     * Returns any message
+     * Listener which returns any message
      */
     public static final IRCMessageListener ANY = new IRCMessageListener() {
         @Override
-        public boolean check(String message) {
+        public boolean check(IRCMessage message) {
             return true;
         }
     };
@@ -48,5 +48,5 @@ public interface IRCMessageListener {
      * @param message The message to check
      * @return true or false
      */
-    public boolean check(String message);
+    public boolean check(IRCMessage message);
 }

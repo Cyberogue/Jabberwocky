@@ -23,6 +23,8 @@
  */
 package me.aliceq.irc;
 
+import me.aliceq.irc.internal.IRCMessageRequest;
+
 /**
  * A custom subroutine monitored by a server which runs on its own thread. This
  * allows it to implement blocking methods for message retrieval. Overwrite the
@@ -32,7 +34,7 @@ package me.aliceq.irc;
  */
 public abstract class IRCSubroutine {
 
-    final private IRCServer server;
+    protected IRCServer server;
 
     /**
      * Default constructor not allowed
@@ -41,30 +43,14 @@ public abstract class IRCSubroutine {
      */
     @Deprecated
     protected IRCSubroutine() {
-        throw new UnsupportedOperationException("Default constructor not allowed");
-    }
 
-    /**
-     * Constructor which ties the subroutine to a server
-     *
-     * @param server
-     */
-    protected IRCSubroutine(IRCServer server) {
-        this.server = server;
     }
 
     public IRCServer server() {
         return this.server;
     }
 
-    public final synchronized String getNext() {
-        return "";
-    }
-
-    public final synchronized String getNext(String source) {
-        return "";
-    }
-
+    // Send messages
     public final void send(String message) {
         server.send(message);
     }
@@ -73,5 +59,52 @@ public abstract class IRCSubroutine {
         server.send(messages);
     }
 
+    // Receive messages
+    public final synchronized IRCMessage getMessage() {
+        try {
+            return getMessage(0);
+        } catch (InterruptedException e) {
+            return null;
+        }
+    }
+
+    public final synchronized IRCMessage getMessage(String source) {
+        try {
+            return getMessage(source, 0);
+        } catch (InterruptedException e) {
+            return null;
+        }
+    }
+
+    public final synchronized IRCMessage getMessage(IRCMessageListener listener) {
+        try {
+            return getMessage(listener, 0);
+        } catch (InterruptedException e) {
+            return null;
+        }
+    }
+
+    public final synchronized IRCMessage getMessage(int timeout) throws InterruptedException {
+        IRCMessageRequest request = new IRCMessageRequest(server, IRCMessageListener.ANY);
+        return request.push(timeout);
+    }
+
+    public final synchronized IRCMessage getMessage(final String source, int timeout) throws InterruptedException {
+        final String s = source;
+        IRCMessageRequest request = new IRCMessageRequest(server, new IRCMessageListener() {
+            @Override
+            public boolean check(IRCMessage message) {
+                return message.source.equals(s);
+            }
+        });
+        return request.push(timeout);
+    }
+
+    public final synchronized IRCMessage getMessage(IRCMessageListener listener, int timeout) throws InterruptedException {
+        IRCMessageRequest request = new IRCMessageRequest(server, listener);
+        return request.push(timeout);
+    }
+
+    // Abstract
     public abstract void run();
 }

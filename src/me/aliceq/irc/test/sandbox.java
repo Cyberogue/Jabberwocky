@@ -38,10 +38,13 @@ public class sandbox {
         server.start();
 
         IRCIdentity me = new IRCIdentity("AliceTest", "AliceTest", "AliceBot2.0", "test");
-       // server.identify(me);
+        server.identify(me);
 
-        IRCMessage message = IRCMessage.parseFrom(":nova.esper.net NOTICE * :*** Found your hostname");
-
-        System.out.println(message.toString("[%D] [%S:%U] [%T] %M"));
+        try{
+            Thread.sleep(10000);    // Quit after 10s
+        }catch(InterruptedException e){
+            
+        }
+        System.out.println("Quit");
     }
 }
