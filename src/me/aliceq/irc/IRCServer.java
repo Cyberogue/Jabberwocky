@@ -31,11 +31,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import me.aliceq.irc.internal.IRCMessageRequest;
 import me.aliceq.irc.subroutines.ChannelMonitoringSubroutine;
 import me.aliceq.irc.subroutines.ConnectionSubroutine;
@@ -47,11 +44,14 @@ import me.aliceq.irc.subroutines.ConnectionSubroutine;
  */
 public final class IRCServer {
 
+    public static final int VERBOSITY_NONE = 0;
+    public static final int VERBOSITY_LOW = 10;
+    public static final int VERBOSITY_MEDIUM = 20;
+    public static final int VERBOSITY_HIGH = 30;
+
     private final IRCSocket socket;
     private PrintWriter outstream;
     private BufferedReader instream;
-
-    private boolean verbose = false;
 
     private final List<IRCMessageRequest> requests = new ArrayList(3);
 
@@ -60,6 +60,8 @@ public final class IRCServer {
     private final IRCServerDetails details = new IRCServerDetails();
 
     private final Map<String, IRCChannel> channels = new HashMap();
+
+    private int verbosity = VERBOSITY_LOW;
 
     /**
      * Basic constructor
@@ -92,29 +94,50 @@ public final class IRCServer {
 
         this.details.socketAddress = socket.getLocalAddress();
         this.details.socketPort = socket.getLocalPort();
+
+        if (verbosity >= VERBOSITY_MEDIUM) {
+            System.out.println("[!] Server start " + this.details.socketAddress + "@" + this.details.socketPort);
+        }
     }
 
     /**
      * Enables printing of messages and exceptions to System.out
+     *
+     * @param verbosity the verbosity level. A value of 0 prints no messages.
      */
-    public void setVerbose() {
-        this.verbose = true;
+    public void setVerbosity(int verbosity) {
+        if (verbosity >= VERBOSITY_LOW) {
+            System.out.println("[!] Verbosity set to " + verbosity);
+        }
+        this.verbosity = verbosity;
     }
 
     /**
-     * Returns whether or not the server is isVerbose
+     * Returns the server's verbosity level
      *
-     * @return whether or not the server is isVerbose
+     * @return the server's verbosity level
+     */
+    public int verbosityLevel() {
+        return this.verbosity;
+    }
+
+    /**
+     * Returns true if there is any verbosity in the server
+     *
+     * @return true if verbosity is greater than 0
      */
     public boolean isVerbose() {
-        return this.verbose;
+        return this.verbosity > 0;
     }
 
     /**
-     * Disables printing of messages and exceptions to System.out
+     * Returns true if the verbosity level matches or exceeds the threshold
+     *
+     * @param threshold verbosity to compare to
+     * @return true if the current verbosity matches or exceeds the threshold
      */
-    public void setQuiet() {
-        this.verbose = false;
+    public boolean isVerbose(int threshold) {
+        return this.verbosity >= threshold;
     }
 
     /**
@@ -141,6 +164,8 @@ public final class IRCServer {
     public void start() {
         if (!socket.isConnected()) {
             throw new IRCException("Server is not connected");
+        } else if (verbosity >= VERBOSITY_HIGH) {
+            System.out.println("[!] Server start");
         }
 
         // Set getDetails
@@ -153,7 +178,7 @@ public final class IRCServer {
         } catch (IOException e) {
             outstream = null;
             instream = null;
-            if (verbose) {
+            if (verbosity >= VERBOSITY_LOW) {
                 System.out.println(e);
             }
         }
@@ -181,7 +206,7 @@ public final class IRCServer {
                             }
                         }
                     } catch (IOException ex) {
-                        if (server.verbose) {
+                        if (verbosity >= VERBOSITY_LOW) {
                             System.out.println(ex);
                         }
                     }
@@ -200,11 +225,16 @@ public final class IRCServer {
      */
     public void identify(IRCIdentity identity) {
         if (!isReady()) {
+            if (verbosity >= VERBOSITY_HIGH) {
+                System.out.println("[!] Can not identiy, server not ready");
+            }
             return;
+        } else if (verbosity >= VERBOSITY_HIGH) {
+            System.out.println("[!] Server identify as " + identity.username());
         }
 
         // Write messages to send
-        if (identity.password() != null) {
+        if (identity.password() != null && !identity.password().isEmpty()) {
             write("PASS " + identity.password());
         }
 
@@ -240,7 +270,7 @@ public final class IRCServer {
      * @param message message to send
      */
     public void send(String message) {
-        if (verbose) {
+        if (verbosity >= VERBOSITY_MEDIUM) {
             System.out.println("[>] " + message);
         }
 
@@ -255,7 +285,7 @@ public final class IRCServer {
      */
     public void send(String[] messages) {
         for (String message : messages) {
-            if (verbose) {
+            if (verbosity >= VERBOSITY_MEDIUM) {
                 System.out.println("[>] " + message);
             }
             outstream.write(message + "\r\n");
@@ -282,6 +312,17 @@ public final class IRCServer {
      */
     public void join(String channels, String passwords) {
         send("JOIN " + channels + " " + passwords);
+    }
+
+    /**
+     * Sends a private message to a target. This can be either an username or a
+     * channel.
+     *
+     * @param target Target of the message
+     * @param message message to send
+     */
+    public void message(String target, String message) {
+        send("PRIVMSG " + target + " :" + message);
     }
 
     /**
@@ -346,7 +387,7 @@ public final class IRCServer {
      * @param message message to write
      */
     protected void write(String message) {
-        if (verbose) {
+        if (verbosity >= VERBOSITY_MEDIUM) {
             System.out.println("[~] " + message);
         }
         outstream.write(message + "\r\n");
@@ -356,8 +397,8 @@ public final class IRCServer {
      * FLushes the output stream
      */
     protected void flush() {
-        if (verbose) {
-            System.out.println("[^] ");
+        if (verbosity >= VERBOSITY_MEDIUM) {
+            System.out.println("[^] Flush");
         }
         outstream.flush();
     }
@@ -387,7 +428,7 @@ public final class IRCServer {
      * @param message message to validate
      */
     protected synchronized void validate(IRCMessage message) {
-        if (verbose) {
+        if (verbosity >= VERBOSITY_HIGH) {
             System.out.println(message + " [" + requests.size() + "]");
         }
 
@@ -408,6 +449,9 @@ public final class IRCServer {
      * the server
      */
     public void runSubroutine(IRCSubroutine subroutine) {
+        if (verbosity >= VERBOSITY_MEDIUM) {
+            System.out.println("[$] start subroutine [" + subroutine.getClass().getSimpleName() + "]");
+        }
         runSubroutine(subroutine, Thread.MIN_PRIORITY);
     }
 
@@ -466,7 +510,7 @@ public final class IRCServer {
         String key = name.toLowerCase();
         IRCChannel instance = channels.get(key);
         if (instance == null) {
-            instance = new IRCChannel(name);
+            instance = new IRCChannel(name, this);
             channels.put(key, instance);
         }
 
@@ -496,7 +540,7 @@ public final class IRCServer {
             return current;
         }
 
-        IRCChannel c = new IRCChannel(name);
+        IRCChannel c = new IRCChannel(name, this);
         channels.put(name.toLowerCase(), c);
         return c;
     }

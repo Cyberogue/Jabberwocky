@@ -33,15 +33,17 @@ import java.util.Collection;
  */
 public class IRCChannel {
 
+    final public IRCServer server;
+
     final private String name;
     final private ArrayList<String> users = new ArrayList();
 
     private String topic = "";
-    private boolean connected = false;
     private int status = 0;
 
-    public IRCChannel(String name) {
+    public IRCChannel(String name, IRCServer server) {
         this.name = name;
+        this.server = server;
     }
 
     /**
@@ -164,6 +166,16 @@ public class IRCChannel {
      */
     public String getTopic() {
         return topic;
+    }
+
+    /**
+     * Sends a message to the channel. This is equivalent to IRCServer.send with
+     * the target being the channel name.
+     *
+     * @param message the message to send
+     */
+    public void message(String message) {
+        server.message(name, message);
     }
 
     @Override
