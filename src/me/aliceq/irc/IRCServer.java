@@ -482,6 +482,20 @@ public final class IRCServer {
      * Places a subroutine on its own thread and runs it, monitoring it
      *
      * @param subroutine the subroutine to run
+     * @param daemon if true the subroutine will be run as a daemon thread. The
+     * program exits when the only threads left running are daemon threads so
+     * set this to false for a persistent subroutine.
+     * @throws UnsupportedOperationException if this is called before starting
+     * the server
+     */
+    public void runSubroutine(IRCSubroutine subroutine, boolean daemon) {
+        runSubroutine(subroutine, Thread.MIN_PRIORITY, daemon);
+    }
+
+    /**
+     * Places a subroutine on its own thread and runs it, monitoring it
+     *
+     * @param subroutine the subroutine to run
      * @param priority the Thread priority to give the subroutine
      * @param daemon if true the subroutine will be run as a daemon thread. The
      * program exits when the only threads left running are daemon threads so
