@@ -30,7 +30,15 @@ import me.aliceq.irc.IRCSubroutine;
 /**
  * An advanced-use subroutine which works as a proxy for messages. Any messages
  * received containing with the provided key whose sender matches the master
- * will be echoed raw.
+ * will be echoed raw. Additionally, the following actions are understood, which
+ * should be typed after the key with no space in between. For example, "$JOIN"
+ * for a key of $.
+ * <p>
+ * JOIN message<br>
+ * PART message<br>
+ * QUIT message<br>
+ * SAY target message<br>
+ * ACTION target message<br>
  *
  * @author Alice Quiros <email@aliceq.me>
  */
@@ -68,15 +76,45 @@ public class ProxySubroutine extends IRCSubroutine {
 
             @Override
             public boolean check(IRCMessage message) {
+                if (!message.typeEquals("PRIVMSG")) {
+                    return false;
+                }
                 int index = message.getMessage().indexOf(key);
                 return index == 0 && message.getSender().matches(master);
             }
         };
 
         while (true) {
+            // Get raw message
             IRCMessage message = getMessage(filter);
             String raw = message.getMessage().substring(key.length());
-            server.send(raw);
+
+            // See if it matches any actions
+            String[] tokens = raw.split("\\s", 3);
+            if (tokens.length > 0) {
+                switch (tokens[0].toUpperCase()) {
+                    case "SAY":
+                        if (tokens.length == 3) {
+                            server.message(tokens[1], tokens[2]);
+                        }
+                        break;
+                    case "ACTION":
+                        if (tokens.length == 3) {
+                            server.action(tokens[1], tokens[2]);
+                        }
+                        break;
+                    case "JOIN":
+                        if (tokens.length >= 2) {
+                            server.join(tokens[1], tokens.length == 3 ? tokens[2] : "");
+                        }
+                        break;
+                    case "PART":
+                    case "QUIT":
+                    default:
+                        server.send(raw);
+                        break;
+                }
+            }
         }
     }
 }

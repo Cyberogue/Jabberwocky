@@ -326,6 +326,17 @@ public final class IRCServer {
     }
 
     /**
+     * Sends an action message to a target. This can be either an username or a
+     * channel. An action message usually displays of the form *user message
+     *
+     * @param target target of the message
+     * @param action message to send
+     */
+    public void action(String target, String action) {
+        send("PRIVMSG " + target + " :\u0001ACTION " + action + "\u0001");
+    }
+
+    /**
      * Sends a message to part from a channel. If the channel is not monitored,
      * this does nothing.
      *
@@ -430,7 +441,7 @@ public final class IRCServer {
     protected synchronized void validate(IRCMessage message) {
         if (verbosity >= VERBOSITY_HIGH) {
             System.out.println(message);
-        }else if (verbosity >= VERBOSITY_MEDIUM) {
+        } else if (verbosity >= VERBOSITY_MEDIUM) {
             System.out.println(message + " [" + requests.size() + "]");
         }
 
