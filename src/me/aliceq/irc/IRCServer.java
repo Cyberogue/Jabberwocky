@@ -408,7 +408,7 @@ public final class IRCServer {
      * FLushes the output stream
      */
     protected void flush() {
-        if (verbosity >= VERBOSITY_MEDIUM) {
+        if (verbosity >= VERBOSITY_HIGH) {
             System.out.println("[^] Flush");
         }
         outstream.flush();
