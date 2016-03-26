@@ -270,7 +270,7 @@ public final class IRCServer {
      * @param message message to send
      */
     public void send(String message) {
-        if (verbosity >= VERBOSITY_MEDIUM) {
+        if (verbosity >= VERBOSITY_HIGH) {
             System.out.println("[>] " + message);
         }
 
@@ -429,13 +429,15 @@ public final class IRCServer {
      */
     protected synchronized void validate(IRCMessage message) {
         if (verbosity >= VERBOSITY_HIGH) {
+            System.out.println(message);
+        }else if (verbosity >= VERBOSITY_MEDIUM) {
             System.out.println(message + " [" + requests.size() + "]");
         }
 
         // Iterate through the requests using a for-loop to avoid concurrent modification
         for (int i = 0; i < requests.size(); i++) {
             if (requests.get(i).validate(message)) {
-                requests.remove(i);
+                requests.remove(i--);
             }
         }
     }
@@ -449,14 +451,12 @@ public final class IRCServer {
      * the server
      */
     public void runSubroutine(IRCSubroutine subroutine) {
-        if (verbosity >= VERBOSITY_MEDIUM) {
-            System.out.println("[$] start subroutine [" + subroutine.getClass().getSimpleName() + "]");
-        }
-        runSubroutine(subroutine, Thread.MIN_PRIORITY);
+        runSubroutine(subroutine, Thread.MIN_PRIORITY, true);
     }
 
     /**
-     * Places a subroutine on its own thread and runs it, monitoring it
+     * Places a subroutine on its own thread and runs it, monitoring it. By
+     * default the subroutine will be run on a daemon thread.
      *
      * @param subroutine the subroutine to run
      * @param priority the Thread priority to give the subroutine
@@ -464,8 +464,29 @@ public final class IRCServer {
      * the server
      */
     public void runSubroutine(IRCSubroutine subroutine, int priority) {
+        runSubroutine(subroutine, priority, true);
+    }
+
+    /**
+     * Places a subroutine on its own thread and runs it, monitoring it
+     *
+     * @param subroutine the subroutine to run
+     * @param priority the Thread priority to give the subroutine
+     * @param daemon if true the subroutine will be run as a daemon thread. The
+     * program exits when the only threads left running are daemon threads so
+     * set this to false for a persistent subroutine.
+     * @throws UnsupportedOperationException if this is called before starting
+     * the server
+     */
+    public void runSubroutine(IRCSubroutine subroutine, int priority, boolean daemon) {
         final IRCSubroutine sub = subroutine;
         sub.server = this;
+
+        if (verbosity >= VERBOSITY_HIGH) {
+            System.out.println("[$] Subroutine [" + subroutine.getClass().getSimpleName() + "] P" + priority + (daemon ? " +D" : " -D"));
+        } else if (verbosity >= VERBOSITY_MEDIUM) {
+            System.out.println("[$] Subroutine [" + subroutine.getClass().getSimpleName());
+        }
 
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -477,7 +498,7 @@ public final class IRCServer {
         });
 
         thread.setPriority(priority);
-        thread.setDaemon(true);
+        thread.setDaemon(daemon);
         thread.start();
     }
 

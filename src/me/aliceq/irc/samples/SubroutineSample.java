@@ -25,54 +25,49 @@ package me.aliceq.irc.samples;
 
 import me.aliceq.irc.IRCIdentity;
 import me.aliceq.irc.IRCServer;
+import me.aliceq.irc.IRCSubroutine;
 import me.aliceq.irc.internal.IRCSocket;
 
 /**
- * A sample program which simply shows how to set up a connection to a server,
- * authenticate and then read messages from it.
+ * A sample program which connects to a server and runs a custom subroutine
+ * implementation
  *
  * @author Alice Quiros <email@aliceq.me>
  */
-public class QuickStartSample {
+public class SubroutineSample {
 
     public static void main(String[] args) {
-        // Create a new server instance to connect to irc.esper.net on the default port
+        /*
+         * See QuickStartSample for information on connecting to a server
+         */
+
+        // Create server and connect
         IRCServer server = new IRCServer("aperture.esper.net", IRCSocket.DEFAULT_PORT);
-
-        // Server the server verbosity. This tells it to print messages to System.out 
-        // and is mostly for debugging, but we want to see what's happening.
-        server.setVerbosity(IRCServer.VERBOSITY_MEDIUM);
-
-        // Start the server connection
-        server.start();
-
-        // Create an identity for yourself using the username "Jabberwocky", no password
         IRCIdentity me = new IRCIdentity("Jabberwock");
-        // And identify
+        server.start();
         server.identify(me);
 
-        // Sleep for a long time so that the program doesn't exit. The moment this thread exits the program will quit.
+        // Create a new instance of the subroutine. See AutomaticResponseSubroutine within the same package to understand how it work
+        IRCSubroutine subroutine = new AutomaticResponseSubroutine("I am a bot. This is an automated message. Beep boop.");
+
         try {
             // Check every half second if we successfully connected
             while (!server.getDetails().connected) {
                 Thread.sleep(500);
             }
-
             System.out.println("Successfully connected!");
-
-            // Join the "Wonderland" channel
             server.join("#Wonderland");
+            
+            // Once we're connected, run our subroutine
+            server.runSubroutine(subroutine);
 
-            // Send a hello message
-            server.message("#Wonderland", "Hello world!");
-
-            // Wait for 5 seconds
-            Thread.sleep(5000);
-
-            // And quit
-            server.quit("Goodbyte world!");
+            // Wait for 10 minutes (millisecond value)
+            Thread.sleep(10 * 60 * 1000);
         } catch (Exception e) {
 
         }
+
+        // and quit the program
+        server.quit("Goodbyte world!");
     }
 }

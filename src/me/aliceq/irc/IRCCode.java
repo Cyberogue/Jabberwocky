@@ -130,7 +130,13 @@ public abstract class IRCCode {
     public static final int RPL_ADMINLOC2 = 258;
     public static final int RPL_ADMINEMAIL = 259;
     public static final int RPL_TRYAGAIN = 263;
-
+    
+    public static final int ERR_NOSUCHNICK = 401;
+    public static final int ERR_NOSUCHSERVER = 402;
+    public static final int ERR_NOSUCHCHANNEL = 403;
+    public static final int ERR_CANNOTSENDTOCHAN = 404;
+    public static final int ERR_TOOMANYCHANNELS = 405;
+    
     public static final int ERR_WASNOSUCHNICK = 406;
     public static final int ERR_NOSUCHSERVICE = 408;
     public static final int ERR_NOORIGIN = 409;

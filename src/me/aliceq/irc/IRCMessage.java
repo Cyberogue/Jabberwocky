@@ -82,7 +82,7 @@ public class IRCMessage {
      *
      * @return
      */
-    public String getHostname() {
+    public String getHostMask() {
         int i = sender.indexOf('!');
         if (i < 0) {
             return "";
@@ -207,7 +207,7 @@ public class IRCMessage {
      * @return
      */
     public boolean hostEquals(String value) {
-        return this.getHostname().equalsIgnoreCase(value);
+        return this.getHostMask().equalsIgnoreCase(value);
     }
 
     /**
@@ -218,6 +218,16 @@ public class IRCMessage {
      */
     public boolean receiverEquals(String value) {
         return this.receiver.equalsIgnoreCase(value);
+    }
+
+    /**
+     * Returns true if the message was sent to a channel. That is, the receiver
+     * is of the format #*
+     *
+     * @return true if the message was sent to a channel
+     */
+    public boolean channelReceiver() {
+        return this.receiver.charAt(0) == '#';
     }
 
     /**
@@ -307,7 +317,7 @@ public class IRCMessage {
         String s = format;
 
         String user = sender == null ? "" : this.getSender();
-        String host = sender == null ? "" : this.getHostname();
+        String host = sender == null ? "" : this.getHostMask();
 
         s = s.replace("%F", user + (host.equals("") ? "" : "!" + host));
         s = s.replace("%S", user);
